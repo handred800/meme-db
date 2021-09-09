@@ -1,28 +1,35 @@
 <template>
   <div id="app">
-    <!-- auth section -->
-    <form @submit.prevent="signIn">
-      <fieldset v-if="this.uid === ''">
-        <input type="text" v-model="email" placeholder="email">
-        <input type="password" v-model="password" placeholder="password">
-        <button type="submit">sign in</button>        
-      </fieldset>
-      <fieldset v-else>
-        <button type="button" @click="signOut">sign out</button>
-      </fieldset>
-    </form>
-    <!-- upload section -->
-    <form @submit.prevent="uploadMeme" v-if="this.uid !== ''">
-      <input type="file" accept="image/*" @change="changeData">
-      <button type="submit">upload</button>
-    </form>
+    
+    <div class="admin-bar">
+      <!-- auth section -->
+      <form @submit.prevent="signIn">
+        <fieldset v-if="this.uid === ''">
+          <input type="email" v-model="email" placeholder="email" required>
+          <input type="password" v-model="password" placeholder="password" required>
+          <button class="btn" type="submit">sign in</button>        
+        </fieldset>
+        <fieldset v-else>
+          <button class="btn" type="button" @click="signOut">sign out</button>
+        </fieldset>
+      </form>
+      <!-- upload section -->
+      <form @submit.prevent="uploadMeme" v-if="this.uid !== ''">
+        <fieldset>
+          <input type="file" accept="image/*" @change="changeData">
+          <button class="btn" type="submit">upload</button>
+        </fieldset>
+      </form>
+    </div>
     <!-- images section -->
-    <ul v-if="memeList.length > 0">
-      <li v-for="meme in memeList" :key="meme.id">
-        <img class="thumbnail" :src="meme.path" alt="">
-        <input type="text" v-model="meme.path" readonly @click="copyvalue">
-      </li>
-    </ul>
+    <div class="row" v-if="memeList.length > 0">
+      <div class="column" v-for="meme in memeList" :key="meme.id">
+        <div class="thumbnail">
+          <img :src="meme.path" alt="">
+          <!-- <input type="text" v-model="meme.path" readonly @click="copyvalue"> -->
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -128,12 +135,3 @@ export default {
   },
 }
 </script>
-
-<style>
-  .thumbnail{
-    display: inline-block;
-    width: 100px;
-    height: 100px;
-    object-fit: cover;
-  }
-</style>
