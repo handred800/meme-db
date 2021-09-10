@@ -57,6 +57,7 @@
             href="#"
             @click="deleteMeme(meme.id, meme.name)"
             class="icon-delete"
+            v-if="this.uid !== ''"
             >×</a
           >
           <img :src="meme.url" alt="" />
