@@ -20,7 +20,14 @@
       <!-- upload section -->
       <form @submit.prevent="uploadMeme" v-if="this.uid !== ''">
         <fieldset>
-          <input type="file" accept="image/*" @change="changeData" />
+          <tags-input
+            element-id="tags"
+            v-model="memeData.tags"
+            placeholder="標籤"
+            :existing-tags="allTags"
+            :typeahead-hide-discard="true"
+          ></tags-input>
+          <input type="file" accept="image/*" @change="changeData" required />
           <button class="btn" type="submit">upload</button>
         </fieldset>
       </form>
@@ -30,9 +37,12 @@
       <tags-input
         element-id="tags"
         v-model="selectedTags"
+        placeholder="標籤"
         :existing-tags="allTags"
+        :typeahead-activation-threshold="0"
         :typeahead="true"
         :typeahead-always-show="true"
+        :typeahead-hide-discard="true"
       ></tags-input>
     </div>
 
@@ -40,7 +50,13 @@
     <div class="row" v-if="memeList.length > 0">
       <div class="column" v-for="meme in memeList" :key="meme.id">
         <div class="thumbnail">
-          <img :src="meme.path" alt="" />
+          <a
+            href="#"
+            @click="deleteMeme(meme.id, meme.name)"
+            class="icon-delete"
+            >×</a
+          >
+          <img :src="meme.url" alt="" />
           <!-- <input type="text" v-model="meme.path" readonly @click="copyvalue"> -->
         </div>
       </div>
@@ -59,10 +75,19 @@ import {
 import {
   getFirestore,
   collection,
+  doc,
+  getDocs,
   addDoc,
+  deleteDoc,
   onSnapshot,
 } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  deleteObject,
+  getDownloadURL,
+} from "firebase/storage";
 
 const firebaseApp = initializeApp({
   apiKey: process.env.VUE_APP_APIKEY,
@@ -89,15 +114,12 @@ export default {
         filename: "",
       },
       memeData: {
-        tags: [""],
-        path: "",
+        tags: [],
+        name: "",
+        url: "",
       },
       selectedTags: [],
-      allTags: [
-        { key: "web-development", value: "Web Development" },
-        { key: "php", value: "PHP" },
-        { key: "javascript", value: "JavaScript" },
-      ],
+      allTags: [],
     };
   },
   methods: {
@@ -132,18 +154,35 @@ export default {
           console.log(error.message);
         })
         .then((url) => {
-          this.memeData.path = url;
-          return this.createDoc();
+          this.memeData.name = this.fileData.filename;
+          this.memeData.url = url;
+          this.createDoc();
         });
     },
+    deleteMeme(id, name) {
+      this.deleteDoc(id)
+        .then(() => {
+          return this.deleteFile(name);
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+    // firebase api
     uploadFile() {
       return uploadBytes(
         ref(storage, `images/${this.fileData.filename}`),
         this.fileData.file
       );
     },
+    deleteFile(name) {
+      return deleteObject(ref(storage, `images/${name}`));
+    },
     createDoc() {
       return addDoc(collection(db, "memes"), this.memeData);
+    },
+    deleteDoc(id) {
+      return deleteDoc(doc(db, "memes", id));
     },
     getImageUrl(path) {
       return getDownloadURL(ref(storage, path));
@@ -158,6 +197,16 @@ export default {
       // console.log('auth has changed')
       this.uid = user ? user.uid : "";
     });
+
+    getDocs(collection(db, "tags"))
+      .then((data) => {
+        data.forEach((doc) => {
+          this.allTags.push({
+            key: doc.id,
+            value: doc.data().name
+          })
+        })
+      })
 
     onSnapshot(collection(db, "memes"), (Snapshots) => {
       this.memeList = [];
