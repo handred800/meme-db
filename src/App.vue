@@ -22,9 +22,13 @@
         <fieldset>
           <tags-input
             element-id="tags"
+            value-fields="value"
             v-model="memeData.tags"
             placeholder="標籤"
             :existing-tags="allTags"
+            :typeahead-activation-threshold="0"
+            typeahead-style="dropdown"
+            :typeahead="true"
             :typeahead-hide-discard="true"
           ></tags-input>
           <input type="file" accept="image/*" @change="changeData" required />
@@ -37,9 +41,8 @@
       <tags-input
         element-id="tags"
         v-model="selectedTags"
-        placeholder="標籤"
+        placeholder="搜尋標籤"
         :existing-tags="allTags"
-        :typeahead-activation-threshold="0"
         :typeahead="true"
         :typeahead-always-show="true"
         :typeahead-hide-discard="true"
@@ -48,7 +51,7 @@
 
     <!-- images section -->
     <div class="row" v-if="memeList.length > 0">
-      <div class="column" v-for="meme in memeList" :key="meme.id">
+      <div class="column" v-for="meme in filterMemeList" :key="meme.id">
         <div class="thumbnail">
           <a
             href="#"
@@ -187,10 +190,18 @@ export default {
     getImageUrl(path) {
       return getDownloadURL(ref(storage, path));
     },
-    copyvalue(e) {
-      e.target.select();
-      document.execCommand("copy");
-    },
+  },
+  computed: {
+    filterMemeList() {
+      let selectedTags = this.selectedTags.map((tag) => tag.key);
+
+      if(selectedTags.length <= 0) return this.memeList;
+
+      return this.memeList.filter((meme) => {
+        let thisTags = meme.tags.map((tag) => tag.key);
+        return selectedTags.every((tag) => thisTags.includes(tag));
+      })
+    }
   },
   mounted() {
     onAuthStateChanged(auth, (user) => {
