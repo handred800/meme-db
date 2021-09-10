@@ -18,7 +18,7 @@
         </fieldset>
       </form>
       <!-- upload section -->
-      <form @submit.prevent="uploadMeme" v-if="this.uid !== ''">
+      <form @submit.prevent="uploadMeme" v-if="uid !== ''">
         <fieldset>
           <tags-input
             element-id="tags"
@@ -57,7 +57,7 @@
             href="#"
             @click="deleteMeme(meme.id, meme.name)"
             class="icon-delete"
-            v-if="this.uid !== ''"
+            v-if="uid !== ''"
             >×</a
           >
           <img :src="meme.url" alt="" />
