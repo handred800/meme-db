@@ -3,7 +3,7 @@
     <div class="admin-bar">
       <!-- auth section -->
       <form @submit.prevent="signIn">
-        <fieldset v-if="this.uid === ''">
+        <fieldset v-if="!isSignIn">
           <input type="email" v-model="email" placeholder="email" required />
           <input
             type="password"
@@ -18,7 +18,7 @@
         </fieldset>
       </form>
       <!-- upload section -->
-      <form @submit.prevent="uploadMeme" v-if="uid !== ''">
+      <form ref="memeForm" @submit.prevent="uploadMeme" v-if="isSignIn">
         <fieldset>
           <tags-input
             element-id="tags"
@@ -40,7 +40,7 @@
     <div class="taginput-bar">
       <tags-input
         element-id="tags"
-        v-model="selectedTags"
+        v-model="searchTags"
         placeholder="搜尋標籤"
         :existing-tags="allTags"
         :typeahead="true"
@@ -54,10 +54,9 @@
       <div class="column" v-for="meme in filterMemeList" :key="meme.id">
         <div class="thumbnail">
           <a
-            href="#"
             @click="deleteMeme(meme.id, meme.name)"
             class="icon-delete"
-            v-if="uid !== ''"
+            v-if="isSignIn"
             >×</a
           >
           <img :src="meme.url" alt="" />
@@ -69,148 +68,91 @@
 </template>
 
 <script>
-import { initializeApp } from "firebase/app";
-import {
-  getAuth,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signOut,
-} from "firebase/auth";
-import {
-  getFirestore,
-  collection,
-  doc,
-  getDocs,
-  addDoc,
-  deleteDoc,
-  onSnapshot,
-} from "firebase/firestore";
-import {
-  getStorage,
-  ref,
-  uploadBytes,
-  deleteObject,
-  getDownloadURL,
-} from "firebase/storage";
-
-const firebaseApp = initializeApp({
-  apiKey: process.env.VUE_APP_APIKEY,
-  authDomain: "lizz-meme.firebaseapp.com",
-  projectId: "lizz-meme",
-  storageBucket: "lizz-meme.appspot.com",
-  messagingSenderId: process.env.VUE_APP_SENDERID,
-  appId: process.env.VUE_APP_APPID,
-  measurementId: process.env.VUE_APP_GTAG,
-});
-const auth = getAuth(firebaseApp);
-const db = getFirestore(firebaseApp);
-const storage = getStorage(firebaseApp);
+import * as API from './api';
 
 export default {
   data() {
     return {
       email: "",
       password: "",
-      uid: "",
+      isSignIn: false,
       memeList: [],
       fileData: {
         file: null,
         filename: "",
       },
       memeData: {
-        tags: [],
         name: "",
+        tags: [],
         url: "",
       },
-      selectedTags: [],
+      searchTags: [],
       allTags: [],
     };
   },
   methods: {
-    signIn() {
-      signInWithEmailAndPassword(auth, this.email, this.password)
-        .then(() => {
-          // const user = userCredential.user;
-          // console.log(user);
-        })
-        .catch((error) => {
-          console.log(error.message);
-        });
+    async signIn() {
+      try{
+        await API.SIGNIN(this.email, this.password)
+        this.email = '';
+        this.password = '';
+      }
+      catch(error) {
+        console.log(error.message);
+      }
     },
     signOut() {
-      signOut(auth)
-        .then(() => {})
-        .catch((error) => {
-          console.log(error.message);
-        });
+      API.SIGNOUT();
     },
     changeData(e) {
+      if(e.target.files[0] === undefined) return;
       this.fileData.file = e.target.files[0];
       this.fileData.filename = this.fileData.file.name;
     },
-    uploadMeme() {
-      this.uploadFile()
-        .then((snapshot) => {
-          // console.log(snapshot)
-          return this.getImageUrl(snapshot.metadata.fullPath);
-        })
-        .catch((error) => {
-          console.log(error.message);
-        })
-        .then((url) => {
-          this.memeData.name = this.fileData.filename;
-          this.memeData.url = url;
-          this.createDoc();
-        });
+    async uploadMeme() {
+      try {
+        const res = await API.UPLOAD_FILE(this.fileData.filename, this.fileData.file);
+        const url = await API.GET_IMAGE_URL(res.metadata.fullPath);
+        this.memeData.name = this.fileData.filename
+        this.memeData.url = url;
+        await API.CREATE_DOC('memes', this.memeData);
+      }
+      catch(error) {
+        console.log(error.message);
+      }
+      // reset form input
+      this.$refs.memeForm.reset();
+      this.memeData = {
+        name: '',
+        tags: [],
+        url: '',
+      }
     },
-    deleteMeme(id, name) {
-      this.deleteDoc(id)
-        .then(() => {
-          return this.deleteFile(name);
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
-    // firebase api
-    uploadFile() {
-      return uploadBytes(
-        ref(storage, `images/${this.fileData.filename}`),
-        this.fileData.file
-      );
-    },
-    deleteFile(name) {
-      return deleteObject(ref(storage, `images/${name}`));
-    },
-    createDoc() {
-      return addDoc(collection(db, "memes"), this.memeData);
-    },
-    deleteDoc(id) {
-      return deleteDoc(doc(db, "memes", id));
-    },
-    getImageUrl(path) {
-      return getDownloadURL(ref(storage, path));
+    async deleteMeme(id, name) {
+      try {
+        await API.DELETE_DOC('memes', id);
+        await API.DELETE_FILE(name);
+      }
+      catch(error) {
+        console.log(error.message);
+      }
     },
   },
   computed: {
     filterMemeList() {
-      let selectedTags = this.selectedTags.map((tag) => tag.key);
+      let searchTags = this.searchTags.map((tag) => tag.key);
 
-      if(selectedTags.length <= 0) return this.memeList;
+      if(searchTags.length <= 0) return this.memeList;
 
       return this.memeList.filter((meme) => {
         let thisTags = meme.tags.map((tag) => tag.key);
-        return selectedTags.every((tag) => thisTags.includes(tag));
+        return searchTags.every((tag) => thisTags.includes(tag));
       })
     }
   },
   mounted() {
-    onAuthStateChanged(auth, (user) => {
-      // console.log('auth has changed')
-      this.uid = user ? user.uid : "";
-    });
-
-    getDocs(collection(db, "tags"))
+    API.CREATE_AUTH_STATE_LISTENER((user) => { this.isSignIn = user !== null })
+    API.GET_COLLECTION_DOC('tags')
       .then((data) => {
         data.forEach((doc) => {
           this.allTags.push({
@@ -219,14 +161,15 @@ export default {
           })
         })
       })
-
-    onSnapshot(collection(db, "memes"), (Snapshots) => {
+    
+    API.CREATE_DOC_LISTENER('memes', (Snapshots) => {
       this.memeList = [];
       Snapshots.forEach((doc) => {
         let meme = Object.assign(doc.data(), { id: doc.id });
         this.memeList.push(meme);
-      });
+      },(error) => {console.log(error)});
     });
+
   },
 };
 </script>
