@@ -37,40 +37,19 @@
       </form>
     </div>
 
-    <div class="taginput-bar">
-      <tags-input
-        element-id="tags"
-        v-model="searchTags"
-        placeholder="搜尋標籤"
-        :existing-tags="allTags"
-        :typeahead="true"
-        :typeahead-always-show="true"
-        :typeahead-hide-discard="true"
-      ></tags-input>
-    </div>
+    <meme-list :memes="memeList" :tags="allTags" :isAdmin="isSignIn"></meme-list>
 
-    <!-- images section -->
-    <transition-group name="meme-filter" tag="div" class="row" v-if="memeList.length > 0">
-      <div class="column meme-filter" v-for="meme in filterMemeList" :key="meme.id">
-        <div class="thumbnail">
-          <a
-            @click="deleteMeme(meme.id, meme.name)"
-            class="icon-delete"
-            v-if="isSignIn"
-            >×</a
-          >
-          <img :src="meme.url" alt="" />
-          <!-- <input type="text" v-model="meme.path" readonly @click="copyvalue"> -->
-        </div>
-      </div>
-    </transition-group>
   </div>
 </template>
 
 <script>
 import * as API from './api';
+import memeList from '@/components/memeList.vue';
 
 export default {
+  components: {
+    memeList
+  },
   data() {
     return {
       email: "",
