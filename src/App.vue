@@ -11,10 +11,10 @@
             placeholder="password"
             required
           />
-          <button class="btn" type="submit">sign in</button>
+          <button class="btn btn-primary" type="submit">sign in</button>
         </fieldset>
         <fieldset v-else>
-          <button class="btn" type="button" @click="signOut">sign out</button>
+          <button class="btn btn-primary" type="button" @click="signOut">sign out</button>
         </fieldset>
       </form>
       <!-- upload section -->
@@ -32,7 +32,7 @@
             :typeahead-hide-discard="true"
           ></tags-input>
           <input type="file" accept="image/*" @change="changeData" required />
-          <button class="btn" type="submit">upload</button>
+          <button class="btn btn-primary" type="submit">upload</button>
         </fieldset>
       </form>
     </div>
@@ -50,8 +50,8 @@
     </div>
 
     <!-- images section -->
-    <div class="row" v-if="memeList.length > 0">
-      <div class="column" v-for="meme in filterMemeList" :key="meme.id">
+    <transition-group name="meme-filter" tag="div" class="row" v-if="memeList.length > 0">
+      <div class="column meme-filter" v-for="meme in filterMemeList" :key="meme.id">
         <div class="thumbnail">
           <a
             @click="deleteMeme(meme.id, meme.name)"
@@ -63,7 +63,7 @@
           <!-- <input type="text" v-model="meme.path" readonly @click="copyvalue"> -->
         </div>
       </div>
-    </div>
+    </transition-group>
   </div>
 </template>
 
