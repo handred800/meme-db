@@ -1,6 +1,8 @@
-$primary: #3e5dc5;
-$secondary: pink;
-$light: #eee;
+@import "./_normalize";
+
+$primary: #C295D8;
+$secondary: #FCE2DB;
+$light: #F6E5F5;
 $danger: #ff4848;
 
 $color-set: (
@@ -109,7 +111,7 @@ input[type="file"] {
 .row {
   display: flex;
   flex-wrap: wrap;
-  margin: 0 -5px;
+  // margin: 0 -5px;
   .column {
     padding: 0 5px;
     flex: 0 0 auto;
@@ -127,13 +129,13 @@ input[type="file"] {
 // productList filter的動畫
 .meme-filter {
   opacity: 1;
-  transform: scale(1) translateY(0);
+  transform: translateY(0);
   transition: 0.5s;
 }
 
 .meme-filter-enter,
 .meme-filter-leave-to {
-  transform: scale(0.5) translateY(100px);
+  transform: translateY(100px);
   opacity: 0;
 }
 

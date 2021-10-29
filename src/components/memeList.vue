@@ -11,8 +11,8 @@
         :typeahead-hide-discard="true"
       ></tags-input>
     </div>
-    <transition-group name="meme-filter" tag="div" class="row" v-if="memes.length > 0">
-      <div class="column meme-filter" v-for="meme in filterMemeList" :key="meme.id">
+    <transition-group v-masonry item-selector=".column" name="meme-filter" tag="div" class="row">
+      <div v-masonry-tile class="column meme-filter" v-for="meme in filterMemeList" :key="meme.id">
         <div class="thumbnail">
           <a
             @click="deleteMeme(meme.id, meme.name)"
@@ -29,6 +29,7 @@
 </template>
 
 <script>
+import * as API from "../api";
 export default {
   props: {
     tags: Array,
@@ -39,6 +40,16 @@ export default {
     return {
       searchTags: [],
     }
+  },
+  methods: {
+    async deleteMeme(id, name) {
+      try {
+        await API.DELETE_DOC("memes", id);
+        await API.DELETE_FILE(name);
+      } catch (error) {
+        console.log(error.message);
+      }
+    },
   },
   computed: {
     filterMemeList() {
